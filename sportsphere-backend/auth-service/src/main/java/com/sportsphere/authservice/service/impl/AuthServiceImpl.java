@@ -10,6 +10,7 @@ import com.sportsphere.authservice.service.AuthService;
 import com.sportsphere.authservice.service.JwtService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,6 +24,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
         private final UserRepository repository;
@@ -72,9 +74,14 @@ public class AuthServiceImpl implements AuthService {
                         user.setSports(userSports);
                 }
 
-                repository.save(user);
-
-                notificationClient.sendWelcomeEmail(user.getId().toString(), user.getEmail(), user.getFirstName());
+                // Fire and forget notification
+                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                        try {
+                                notificationClient.sendWelcomeEmail(user.getId().toString(), user.getEmail(), user.getFirstName());
+                        } catch (Exception e) {
+                                log.error("Failed to send welcome email: ", e);
+                        }
+                });
 
                 return MessageResponse.builder().message("User registered successfully").build();
         }
@@ -165,8 +172,14 @@ public class AuthServiceImpl implements AuthService {
                         user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15));
                         repository.save(user);
 
-                        notificationClient.sendPasswordResetTokenEmail(user.getId().toString(), user.getEmail(),
-                                        resetToken);
+                        // Fire and forget notification
+                        java.util.concurrent.CompletableFuture.runAsync(() -> {
+                                try {
+                                        notificationClient.sendPasswordResetTokenEmail(user.getId().toString(), user.getEmail(), resetToken);
+                                } catch (Exception e) {
+                                        log.error("Failed to send password reset email: ", e);
+                                }
+                        });
                 }
 
                 return MessageResponse.builder()
@@ -195,7 +208,13 @@ public class AuthServiceImpl implements AuthService {
                 user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15));
                 repository.save(user);
 
-                notificationClient.sendPasswordResetTokenEmail(user.getId().toString(), user.getEmail(), resetToken);
+                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                        try {
+                                notificationClient.sendPasswordResetTokenEmail(user.getId().toString(), user.getEmail(), resetToken);
+                        } catch (Exception e) {
+                                log.error("Failed to send password reset email during OTP verification: ", e);
+                        }
+                });
 
                 return MessageResponse.builder()
                                 .message("OTP verified successfully. Password reset link sent to your email.").build();
@@ -302,8 +321,14 @@ public class AuthServiceImpl implements AuthService {
 
                 repository.save(user);
 
-                notificationClient.sendManagerRegistrationEmail(user.getId().toString(), user.getEmail(),
-                                user.getFirstName(), resetToken);
+                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                        try {
+                                notificationClient.sendManagerRegistrationEmail(user.getId().toString(), user.getEmail(),
+                                                user.getFirstName(), resetToken);
+                        } catch (Exception e) {
+                                log.error("Failed to send manager registration email: ", e);
+                        }
+                });
 
                 return getMe(user.getEmail());
         }
@@ -322,8 +347,14 @@ public class AuthServiceImpl implements AuthService {
                 user.setResetTokenExpiry(LocalDateTime.now().plusDays(1)); // Valid for 24 hours
                 repository.save(user);
 
-                notificationClient.sendManagerRegistrationEmail(user.getId().toString(), user.getEmail(),
-                                user.getFirstName(), resetToken);
+                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                        try {
+                                notificationClient.sendManagerRegistrationEmail(user.getId().toString(), user.getEmail(),
+                                                user.getFirstName(), resetToken);
+                        } catch (Exception e) {
+                                log.error("Failed to resend manager credentials email: ", e);
+                        }
+                });
 
                 return MessageResponse.builder()
                                 .message("Manager credentials re-sent successfully")

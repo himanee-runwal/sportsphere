@@ -68,13 +68,16 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toSet());
 
         return slots.stream()
-                .map(slot -> SlotAvailabilityResponse.builder()
-                        .slotId(slot.getId())
-                        .startTime(slot.getStartTime())
-                        .endTime(slot.getEndTime())
-                        .price(calculateSlotPrice(turf.getPricePerHour(), slot))
-                        .isAvailable(!bookedSlotIds.contains(slot.getId()))
-                        .build())
+                .map(slot -> {
+                        boolean isPast = date.equals(LocalDate.now()) && slot.getStartTime().isBefore(LocalTime.now());
+                        return SlotAvailabilityResponse.builder()
+                                .slotId(slot.getId())
+                                .startTime(slot.getStartTime())
+                                .endTime(slot.getEndTime())
+                                .price(calculateSlotPrice(turf.getPricePerHour(), slot))
+                                .isAvailable(!bookedSlotIds.contains(slot.getId()) && !isPast)
+                                .build();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -98,6 +101,10 @@ public class BookingServiceImpl implements BookingService {
 
         if (!slot.getGroundId().equals(request.getGroundId())) {
             throw new BadRequestException("The selected slot does not belong to the requested ground");
+        }
+
+        if (request.getBookingDate().equals(LocalDate.now()) && slot.getStartTime().isBefore(LocalTime.now())) {
+            throw new BadRequestException("Cannot book a time slot in the past");
         }
 
         if (!slot.getIsAvailable()) {
@@ -133,22 +140,29 @@ public class BookingServiceImpl implements BookingService {
                 .notes(request.getNotes())
                 .build();
 
-        booking = bookingRepository.save(booking);
+        final Booking savedBooking = bookingRepository.save(booking);
 
         // Fetch User email from some user service or decode from JWT token if available. 
         // For now, we will send to a placeholder email as it's not present in Booking object
         String userEmail = "user" + userId + "@example.com";
         String timeString = slot.getStartTime().toString() + " - " + slot.getEndTime().toString();
         
-        notificationServiceClient.sendBookingConfirmation(
-            userId.toString(), 
-            userEmail, 
-            booking.getBookingNumber(), 
-            turf.getName(), 
-            timeString
-        );
+        // Fire and forget notification to prevent blocking/hanging if notification-service is sleeping
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                notificationServiceClient.sendBookingConfirmation(
+                    userId.toString(), 
+                    userEmail, 
+                    savedBooking.getBookingNumber(), 
+                    turf.getName(), 
+                    timeString
+                );
+            } catch (Exception e) {
+                log.error("Failed to send booking confirmation email async: ", e);
+            }
+        });
 
-        return mapToBookingResponse(booking);
+        return mapToBookingResponse(savedBooking);
     }
 
     @Override
