@@ -23,6 +23,9 @@ public class NotificationServiceClient {
     @Value("${notification-service.url}")
     private String notificationServiceUrl;
 
+    @Value("${frontend.url:http://localhost:5173}")
+    private String frontendUrl;
+
     public void sendWelcomeEmail(String userId, String email, String name) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("name", name);
@@ -37,7 +40,7 @@ public class NotificationServiceClient {
 
     public void sendPasswordResetTokenEmail(String userId, String email, String resetToken) {
         Map<String, Object> payload = new HashMap<>();
-        String resetLink = "http://localhost:5173/reset-password?token=" + resetToken;
+        String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
         payload.put("resetLink", resetLink);
         sendNotification(userId, email, "PasswordReset", payload);
     }
@@ -45,7 +48,7 @@ public class NotificationServiceClient {
     public void sendManagerRegistrationEmail(String userId, String email, String name, String resetToken) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("name", name);
-        String resetLink = "http://localhost:5173/reset-password?token=" + resetToken;
+        String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
         payload.put("resetLink", resetLink);
         sendNotification(userId, email, "ManagerRegistration", payload);
     }
