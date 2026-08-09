@@ -15,6 +15,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -87,17 +89,23 @@ public class AuthController {
                         @CookieValue(name = "accessToken", required = false) String accessTokenCookie,
                         HttpServletResponse response) {
                 // Clear cookies
-                Cookie cookie = new Cookie("accessToken", null);
-                cookie.setPath("/");
-                cookie.setHttpOnly(true);
-                cookie.setMaxAge(0);
-                response.addCookie(cookie);
+                ResponseCookie cookie = ResponseCookie.from("accessToken", "")
+                                .httpOnly(true)
+                                .secure(true)
+                                .path("/")
+                                .maxAge(0)
+                                .sameSite("None")
+                                .build();
+                response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-                Cookie refreshCookie = new Cookie("refreshToken", null);
-                refreshCookie.setPath("/");
-                refreshCookie.setHttpOnly(true);
-                refreshCookie.setMaxAge(0);
-                response.addCookie(refreshCookie);
+                ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
+                                .httpOnly(true)
+                                .secure(true)
+                                .path("/")
+                                .maxAge(0)
+                                .sameSite("None")
+                                .build();
+                response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
                 // Try to get token from header or cookie
                 String token = null;
@@ -120,21 +128,25 @@ public class AuthController {
 
         private void setTokenCookies(HttpServletResponse response, AuthResponse authResponse) {
                 if (authResponse.getToken() != null) {
-                        Cookie cookie = new Cookie("accessToken", authResponse.getToken());
-                        cookie.setHttpOnly(true);
-                        cookie.setSecure(false); // set to true in production
-                        cookie.setPath("/");
-                        cookie.setMaxAge(24 * 60 * 60); // 1 day
-                        response.addCookie(cookie);
+                        ResponseCookie cookie = ResponseCookie.from("accessToken", authResponse.getToken())
+                                        .httpOnly(true)
+                                        .secure(true) // MUST be true for cross-origin (production)
+                                        .path("/")
+                                        .maxAge(24 * 60 * 60) // 1 day
+                                        .sameSite("None") // MUST be None for cross-origin
+                                        .build();
+                        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
                 }
 
                 if (authResponse.getRefreshToken() != null) {
-                        Cookie refreshCookie = new Cookie("refreshToken", authResponse.getRefreshToken());
-                        refreshCookie.setHttpOnly(true);
-                        refreshCookie.setSecure(false); // set to true in production
-                        refreshCookie.setPath("/");
-                        refreshCookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
-                        response.addCookie(refreshCookie);
+                        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", authResponse.getRefreshToken())
+                                        .httpOnly(true)
+                                        .secure(true) // MUST be true for cross-origin (production)
+                                        .path("/")
+                                        .maxAge(7 * 24 * 60 * 60) // 7 days
+                                        .sameSite("None") // MUST be None for cross-origin
+                                        .build();
+                        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
                 }
         }
 
