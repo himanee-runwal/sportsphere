@@ -37,6 +37,7 @@ namespace sportsphere_notification_service.Services
                 };
 
                 using var client = new SmtpClient(host, port);
+                client.UseDefaultCredentials = false;
                 client.Credentials = new NetworkCredential(username, password);
                 client.EnableSsl = true;
 
