@@ -25,9 +25,11 @@ public class RouteValidator {
                 String path = request.getURI().getPath();
                 if (request.getMethod().name().equals("GET") &&
                     !path.startsWith("/api/v1/sports/venues/my-venues") &&
+                    !path.startsWith("/api/v1/booking/my-bookings") &&
                     (path.startsWith("/api/v1/sports/venues") ||
                      path.startsWith("/api/v1/sports/uploads") ||
-                     path.startsWith("/uploads/"))) {
+                     path.startsWith("/uploads/") ||
+                     path.startsWith("/api/v1/booking/slots"))) {
                     return false;
                 }
 

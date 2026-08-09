@@ -269,6 +269,11 @@ const VenuesPage = () => {
   };
 
   const handleBookNowClick = () => {
+    if (!isAuthenticated) {
+      toast.info('Please log in to book a venue.');
+      navigate('/login', { state: { from: '/venues' } });
+      return;
+    }
     setViewState('booking');
     setCart(null);
     setSelectedSlot(null);
@@ -280,6 +285,11 @@ const VenuesPage = () => {
   };
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      toast.info('Please log in to book a venue.');
+      navigate('/login', { state: { from: '/venues' } });
+      return;
+    }
     if (!selectedSlot || !selectedCourt) {
       toast.error('Please select a valid starting slot and court.');
       return;

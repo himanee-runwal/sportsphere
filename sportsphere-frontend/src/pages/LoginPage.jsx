@@ -26,7 +26,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
 
   // Get destination path from redirect or default to home/dashboard
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = (typeof location.state?.from === 'string' ? location.state?.from : location.state?.from?.pathname) || '/dashboard';
 
   const {
     register,
