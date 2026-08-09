@@ -69,13 +69,15 @@ public class BookingServiceImpl implements BookingService {
 
         return slots.stream()
                 .map(slot -> {
+                        boolean isBooked = bookedSlotIds.contains(slot.getId());
                         boolean isPast = date.equals(LocalDate.now()) && slot.getStartTime().isBefore(LocalTime.now());
                         return SlotAvailabilityResponse.builder()
                                 .slotId(slot.getId())
                                 .startTime(slot.getStartTime())
                                 .endTime(slot.getEndTime())
                                 .price(calculateSlotPrice(turf.getPricePerHour(), slot))
-                                .isAvailable(!bookedSlotIds.contains(slot.getId()) && !isPast)
+                                .isAvailable(!isBooked && !isPast)
+                                .isBooked(isBooked)
                                 .build();
                 })
                 .collect(Collectors.toList());

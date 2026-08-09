@@ -343,7 +343,7 @@ const VenuesPage = () => {
 
       for (const booking of pendingBookings) {
         const paymentData = { paymentMethod };
-        lastResponse = await bookingApi.processPayment(booking.id, paymentData);
+        lastResponse = await bookingApi.processPayment(booking.bookingId, paymentData);
       }
 
       // Merge timings and show receipt
@@ -721,10 +721,10 @@ const VenuesPage = () => {
                               <span style={{ fontSize: '9px', opacity: 0.9 }}>
                                 {formatTime12(slot.startTime).split(' ')[1]}
                               </span>
-                              {!isAvailable ? (
+                              {slot.isBooked ? (
                                 <span className="text-danger" style={{ fontSize: '8px', fontWeight: 'bold' }}>Booked</span>
                               ) : (
-                                <span style={{ fontSize: '9px', fontWeight: '600', color: isSelectedInSpan ? '#FFF' : 'var(--ss-primary)' }}>
+                                <span style={{ fontSize: '9px', fontWeight: '600', color: isSelectedInSpan ? '#FFF' : !isAvailable ? '#6c757d' : 'var(--ss-primary)' }}>
                                   ₹{slot.price}
                                 </span>
                               )}

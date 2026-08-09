@@ -17,4 +17,5 @@ public class SlotAvailabilityResponse {
     private LocalTime endTime;
     private BigDecimal price;
     private boolean isAvailable;
+    private boolean isBooked;
 }
