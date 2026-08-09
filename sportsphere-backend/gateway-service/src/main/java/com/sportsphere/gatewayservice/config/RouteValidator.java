@@ -22,15 +22,17 @@ public class RouteValidator {
 
     public Predicate<ServerHttpRequest> isSecured =
             request -> {
-                if (request.getMethod().name().equals("GET") && 
-                    (request.getURI().getPath().startsWith("/api/v1/sports/venues") || 
-                     request.getURI().getPath().startsWith("/api/v1/sports/uploads") ||
-                     request.getURI().getPath().startsWith("/uploads/"))) {
+                String path = request.getURI().getPath();
+                if (request.getMethod().name().equals("GET") &&
+                    !path.startsWith("/api/v1/sports/venues/my-venues") &&
+                    (path.startsWith("/api/v1/sports/venues") ||
+                     path.startsWith("/api/v1/sports/uploads") ||
+                     path.startsWith("/uploads/"))) {
                     return false;
                 }
-                
+
                 return openApiEndpoints
                         .stream()
-                        .noneMatch(uri -> request.getURI().getPath().contains(uri));
+                        .noneMatch(uri -> path.contains(uri));
             };
 }
