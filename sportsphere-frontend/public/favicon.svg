@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <!-- Mask to create transparent cuts inside the soccer ball -->
+    <mask id="soccerBallMask">
+      <!-- Keep the entire inner circle area (White = visible) -->
+      <circle cx="256" cy="256" r="170" fill="#FFFFFF" />
+      
+      <!-- Cut out the pentagon outline and lines (Black = transparent) -->
+      <polygon 
+        points="256,176 332,231 303,321 209,321 180,231" 
+        fill="none" 
+        stroke="#000000" 
+        stroke-width="24" 
+        stroke-linejoin="round" 
+      />
+      
+      <!-- Radial cut lines from pentagon corners outwards -->
+      <path d="M 256,176 L 256,86" stroke="#000000" stroke-width="24" stroke-linecap="round" />
+      <path d="M 332,231 L 418,203" stroke="#000000" stroke-width="24" stroke-linecap="round" />
+      <path d="M 303,321 L 356,394" stroke="#000000" stroke-width="24" stroke-linecap="round" />
+      <path d="M 209,321 L 156,394" stroke="#000000" stroke-width="24" stroke-linecap="round" />
+      <path d="M 180,231 L 94,203" stroke="#000000" stroke-width="24" stroke-linecap="round" />
+    </mask>
+  </defs>
+
+  <!-- Outer Teal Ring -->
+  <circle cx="256" cy="256" r="215" stroke="#0F766E" stroke-width="30" />
+
+  <!-- Inner Segmented Soccer Ball with Transparency Mask -->
+  <circle cx="256" cy="256" r="170" fill="#0F766E" mask="url(#soccerBallMask)" />
+</svg>
