@@ -53,5 +53,10 @@ export const authApi = {
     // API Contract: admin only, bypasses role restriction
     const response = await axiosInstance.post('/v1/auth/admin/users', managerData);
     return response.data;
+  },
+
+  resendManagerAccess: async (email) => {
+    const response = await axiosInstance.post(`/v1/auth/resend-manager-access?email=${encodeURIComponent(email)}`);
+    return response.data;
   }
 };

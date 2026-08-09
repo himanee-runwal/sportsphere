@@ -309,6 +309,28 @@ public class AuthServiceImpl implements AuthService {
         }
 
         @Override
+        public MessageResponse resendManagerAccess(String email) {
+                User user = repository.findByEmail(email)
+                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Manager not found"));
+
+                if (user.getRole() != Role.MANAGER) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is not a manager");
+                }
+
+                String resetToken = UUID.randomUUID().toString();
+                user.setResetToken(resetToken);
+                user.setResetTokenExpiry(LocalDateTime.now().plusDays(1)); // Valid for 24 hours
+                repository.save(user);
+
+                notificationClient.sendManagerRegistrationEmail(user.getId().toString(), user.getEmail(),
+                                user.getFirstName(), resetToken);
+
+                return MessageResponse.builder()
+                                .message("Manager credentials re-sent successfully")
+                                .build();
+        }
+
+        @Override
         public MessageResponse blockUser(@NonNull Long userId) {
                 User user = repository.findById(userId)
                                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));

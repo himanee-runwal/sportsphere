@@ -26,6 +26,8 @@ public interface AuthService {
 
     UserResponse createManager(RegisterRequest request);
 
+    MessageResponse resendManagerAccess(String email);
+
     MessageResponse blockUser(@NonNull Long userId);
 
     MessageResponse unblockUser(@NonNull Long userId);

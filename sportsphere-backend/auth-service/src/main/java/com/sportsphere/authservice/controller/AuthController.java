@@ -199,4 +199,11 @@ public class AuthController {
                         @Valid @RequestBody RegisterRequest request) {
                 return ResponseEntity.ok(authService.createManager(request));
         }
+
+        @Operation(summary = "Resend manager access email")
+        @PostMapping("/resend-manager-access")
+        public ResponseEntity<MessageResponse> resendManagerAccess(
+                        @RequestParam String email) {
+                return ResponseEntity.ok(authService.resendManagerAccess(email));
+        }
 }

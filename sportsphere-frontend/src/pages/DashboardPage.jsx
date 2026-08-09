@@ -905,6 +905,17 @@ const DashboardPage = () => {
 
   const onlineVenuesCount = venues.filter((v) => v.isOnline).length;
 
+  const handleResendAccess = async (managerEmail) => {
+    try {
+      const authApi = (await import('../api/authApi')).authApi;
+      const res = await authApi.resendManagerAccess(managerEmail);
+      toast.success(res.message || `Manager credentials re-sent to ${managerEmail}`);
+    } catch (err) {
+      toast.error(err.message || 'Failed to resend manager access.');
+      console.error(err);
+    }
+  };
+
   return (
     <div className="container py-4">
       {/* Welcome Banner */}
@@ -1250,7 +1261,7 @@ const DashboardPage = () => {
                                 <button
                                   className="btn btn-sm btn-ss-outline px-2 py-1"
                                   style={{ fontSize: '11px' }}
-                                  onClick={() => toast.info(`Manager credentials re-sent to ${v.managerEmail}`)}
+                                  onClick={() => handleResendAccess(v.managerEmail)}
                                 >
                                   Re-send Access
                                 </button>
