@@ -21,6 +21,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +33,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
 
+    private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
+
     private final BookingRepository bookingRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final SportsServiceClient sportsServiceClient;
@@ -40,7 +43,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public List<SlotAvailabilityResponse> getSlotAvailability(Long groundId, LocalDate date) {
-        if (date.isBefore(LocalDate.now())) {
+        if (date.isBefore(LocalDate.now(IST))) {
             throw new BadRequestException("Cannot check slot availability for past dates");
         }
 
@@ -80,7 +83,7 @@ public class BookingServiceImpl implements BookingService {
                         LocalDate actualSlotDate = isNextDay ? date.plusDays(1) : date;
                         LocalDateTime slotDateTime = LocalDateTime.of(actualSlotDate, slot.getStartTime());
 
-                        boolean isPast = slotDateTime.isBefore(LocalDateTime.now());
+                        boolean isPast = slotDateTime.isBefore(LocalDateTime.now(IST));
 
                         // Filter out past slots entirely — don't return them
                         if (isPast) return null;
@@ -102,7 +105,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponse createBooking(BookingRequest request, Long userId) {
-        if (request.getBookingDate().isBefore(LocalDate.now())) {
+        if (request.getBookingDate().isBefore(LocalDate.now(IST))) {
             throw new BadRequestException("Cannot create booking for past dates");
         }
 
@@ -120,7 +123,7 @@ public class BookingServiceImpl implements BookingService {
             throw new BadRequestException("The selected slot does not belong to the requested ground");
         }
 
-        if (request.getBookingDate().equals(LocalDate.now()) && slot.getStartTime().isBefore(LocalTime.now())) {
+        if (request.getBookingDate().equals(LocalDate.now(IST)) && slot.getStartTime().isBefore(LocalTime.now(IST))) {
             throw new BadRequestException("Cannot book a time slot in the past");
         }
 
