@@ -556,7 +556,8 @@ const DashboardPage = () => {
         openTime: newVenue.openTime,
         closeTime: newVenue.closeTime,
         sports: Array.from(new Set(newVenue.courts.map(c => c.sport).filter(Boolean))),
-        managerUserIds: [managerUserId]
+        managerUserIds: [managerUserId],
+        amenities: newVenue.amenities ? newVenue.amenities.split(',').map(s => s.trim()).filter(Boolean) : []
       };
       
       const createdVenueResponse = await venueApi.createVenue(venuePayload);
