@@ -2,10 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using sportsphere_notification_service.Data;
 using sportsphere_notification_service.Services;
 
-var builder = WebApplication.CreateBuilder(args);
-
 // Load .env file
 DotNetEnv.Env.Load();
+
+var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();

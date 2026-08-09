@@ -4,6 +4,7 @@ import com.sportsphere.common.dto.MessageResponse;
 import com.sportsphere.sportsservice.dto.*;
 import com.sportsphere.sportsservice.entity.*;
 import com.sportsphere.sportsservice.repository.*;
+import com.sportsphere.sportsservice.service.CloudinaryService;
 import com.sportsphere.sportsservice.service.LocalFileStorageService;
 import com.sportsphere.sportsservice.service.VenueService;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,8 @@ public class VenueServiceImpl implements VenueService {
     private final TurfRepository turfRepository;
     private final VenueReviewRepository venueReviewRepository;
 
-    private final LocalFileStorageService localFileStorageService;
+    // private final LocalFileStorageService localFileStorageService;
+    private final CloudinaryService cloudinaryService;
 
     // ─────────────────────────────────────────────────────────────────────────────
     // VENUE CRUD
@@ -81,7 +83,8 @@ public class VenueServiceImpl implements VenueService {
             }
         }
 
-        // If created by a MANAGER, automatically assign them as a manager of this new venue
+        // If created by a MANAGER, automatically assign them as a manager of this new
+        // venue
         if ("MANAGER".equalsIgnoreCase(requestingRole) && requestingUserId != null) {
             if (request.getManagerUserIds() == null || !request.getManagerUserIds().contains(requestingUserId)) {
                 venueManagerRepository.save(VenueManager.builder()
@@ -219,13 +222,14 @@ public class VenueServiceImpl implements VenueService {
         Venue venue = getVenueOrThrow(venueId);
         checkManagerAccess(venueId, requestingUserId, requestingRole);
 
-        String fileName = localFileStorageService.uploadFile(file);
-        String url = localFileStorageService.getFileUrl(fileName);
+        java.util.Map uploadResult = cloudinaryService.uploadFile(file);
+        String publicId = (String) uploadResult.get("public_id");
+        String url = (String) uploadResult.get("secure_url");
 
         boolean isFirst = venueImageRepository.findByVenueId(venueId).isEmpty();
         VenueImage image = venueImageRepository.save(VenueImage.builder()
                 .venue(venue)
-                .imageId(fileName)
+                .imageId(publicId)
                 .imageUrl(url)
                 .isPrimary(isFirst)
                 .build());
@@ -243,7 +247,7 @@ public class VenueServiceImpl implements VenueService {
         VenueImage image = venueImageRepository.findById(imageId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found"));
 
-        localFileStorageService.deleteFile(image.getImageId());
+        cloudinaryService.deleteFile(image.getImageId());
         venueImageRepository.delete(image);
         return MessageResponse.builder().message("Image deleted successfully").build();
     }

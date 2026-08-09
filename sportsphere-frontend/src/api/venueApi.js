@@ -50,6 +50,12 @@ export const venueApi = {
     return response.data;
   },
 
+  // Set Primary Image
+  setPrimaryVenueImage: async (venueId, imageId) => {
+    const response = await axiosInstance.patch(`/v1/sports/venues/${venueId}/images/${imageId}/primary`);
+    return response.data;
+  },
+
   // Add or update a review
   addOrUpdateReview: async (venueId, reviewData) => {
     const response = await axiosInstance.post(`/v1/sports/venues/${venueId}/reviews`, reviewData);

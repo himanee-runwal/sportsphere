@@ -367,21 +367,24 @@ const DashboardPage = () => {
 
   // Venue Image File Upload Handler
   const handleVenueImageFileUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 8 * 1024 * 1024) {
-        toast.error('Venue image must be less than 8MB.');
-        return;
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const validFiles = files.filter(f => f.size <= 8 * 1024 * 1024);
+      if (validFiles.length < files.length) {
+        toast.error('Some images are larger than 8MB and were skipped.');
       }
+      if (validFiles.length === 0) return;
+      
+      const file = validFiles[0];
       const reader = new FileReader();
       reader.onload = (event) => {
         setNewVenue((prev) => ({
           ...prev,
-          imageFile: file,
+          imageFiles: validFiles,
           imageUrl: event.target.result,
-          imageFileName: file.name
+          imageFileName: validFiles.length === 1 ? file.name : `${validFiles.length} files selected`
         }));
-        toast.success(`Photo "${file.name}" uploaded successfully!`);
+        toast.success(`${validFiles.length} photo(s) selected successfully!`);
       };
       reader.readAsDataURL(file);
     }
@@ -559,12 +562,12 @@ const DashboardPage = () => {
       const createdVenueResponse = await venueApi.createVenue(venuePayload);
       const venueId = createdVenueResponse.id || createdVenueResponse.venueId || Date.now();
 
-      // Upload the image file to the backend if one was provided
-      if (newVenue.imageFile) {
-        toast.info('Uploading venue image...');
+      // Upload the image files to the backend if provided
+      if (newVenue.imageFiles && newVenue.imageFiles.length > 0) {
+        toast.info(`Uploading ${newVenue.imageFiles.length} venue image(s)...`);
         try {
-          await venueApi.uploadVenueImage(venueId, newVenue.imageFile);
-          toast.success('Venue image uploaded successfully!');
+          await Promise.all(newVenue.imageFiles.map(file => venueApi.uploadVenueImage(venueId, file)));
+          toast.success('Venue image(s) uploaded successfully!');
         } catch (uploadErr) {
           toast.error('Venue created, but image upload failed.');
           console.error('Image upload error:', uploadErr);
@@ -668,7 +671,7 @@ const DashboardPage = () => {
         managerPassword: '',
         imageUrl: VENUE_IMAGE_PRESETS[0].url,
         imageFileName: '',
-        imageFile: null,
+        imageFiles: [],
         courts: [
           { 
             id: 1, 
@@ -799,14 +802,49 @@ const DashboardPage = () => {
     }
   };
 
-  const handleVenueImageUpload = async (venueId, file) => {
-    if (!file) return;
+  const handleVenueImageUpload = async (venueId, files) => {
+    if (!files || files.length === 0) return;
+    const fileArray = Array.from(files);
     try {
-      toast.info('Uploading image...');
-      await venueApi.uploadVenueImage(venueId, file);
-      toast.success('Image uploaded successfully!');
+      toast.info(`Uploading ${fileArray.length} image(s)...`);
+      await Promise.all(fileArray.map(file => venueApi.uploadVenueImage(venueId, file)));
+      toast.success('Images uploaded successfully!');
     } catch (err) {
-      toast.error('Failed to upload image.');
+      toast.error('Failed to upload some images.');
+      console.error(err);
+    }
+  };
+
+  const handleSetPrimaryImage = async (venueId, imageId) => {
+    try {
+      toast.info('Setting primary image...');
+      await venueApi.setPrimaryVenueImage(venueId, imageId);
+      toast.success('Primary image updated!');
+      // Update local state for venues
+      setVenues(venues.map(v => {
+        if (v.id === venueId) {
+          const updatedImages = (v.images || []).map(img => ({
+            ...img,
+            primary: img.id === imageId
+          }));
+          const newPrimary = updatedImages.find(img => img.primary)?.imageUrl || v.imageUrl;
+          return { ...v, images: updatedImages, imageUrl: newPrimary, primaryImageUrl: newPrimary };
+        }
+        return v;
+      }));
+      // Update selected admin venue if it's currently selected
+      if (selectedAdminVenue && selectedAdminVenue.id === venueId) {
+        setSelectedAdminVenue(prev => {
+          const updatedImages = (prev.images || []).map(img => ({
+            ...img,
+            primary: img.id === imageId
+          }));
+          const newPrimary = updatedImages.find(img => img.primary)?.imageUrl || prev.imageUrl;
+          return { ...prev, images: updatedImages, imageUrl: newPrimary, primaryImageUrl: newPrimary };
+        });
+      }
+    } catch (err) {
+      toast.error('Failed to set primary image.');
       console.error(err);
     }
   };
@@ -1255,15 +1293,41 @@ const DashboardPage = () => {
 
                   <div className="row">
                     <div className="col-md-4 mb-4 mb-md-0">
-                      <img 
-                        src={selectedAdminVenue.imageUrl} 
-                        alt={selectedAdminVenue.name} 
-                        className="w-100 rounded-3 object-fit-cover shadow-sm mb-3"
-                        style={{ height: '200px' }}
-                      />
+                      {selectedAdminVenue.images && selectedAdminVenue.images.length > 0 ? (
+                        <div className="d-flex overflow-auto gap-2 mb-3 pb-2 custom-scrollbar">
+                          {selectedAdminVenue.images.map((img) => (
+                            <div key={img.id} className="position-relative flex-shrink-0" style={{ width: '150px' }}>
+                              <img 
+                                src={img.imageUrl} 
+                                alt="Venue" 
+                                className="w-100 rounded-3 object-fit-cover shadow-sm border"
+                                style={{ height: '100px' }}
+                              />
+                              {img.primary ? (
+                                <span className="badge bg-success position-absolute top-0 start-0 m-1" style={{ fontSize: '10px' }}>Primary</span>
+                              ) : (
+                                <button 
+                                  className="btn btn-sm btn-light position-absolute bottom-0 end-0 m-1 py-0 px-1 opacity-75 fw-bold hover-opacity-100"
+                                  style={{ fontSize: '10px' }}
+                                  onClick={() => handleSetPrimaryImage(selectedAdminVenue.id, img.id)}
+                                >
+                                  Set Primary
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <img 
+                          src={selectedAdminVenue.imageUrl} 
+                          alt={selectedAdminVenue.name} 
+                          className="w-100 rounded-3 object-fit-cover shadow-sm mb-3"
+                          style={{ height: '200px' }}
+                        />
+                      )}
                       <label className="btn btn-sm btn-ss-outline w-100 mb-4 cursor-pointer d-flex justify-content-center align-items-center gap-1">
                         <BiUpload /> Upload New Image
-                        <input type="file" accept="image/*" className="d-none" onChange={(e) => handleVenueImageUpload(selectedAdminVenue.id, e.target.files[0])} />
+                        <input type="file" multiple accept="image/*" className="d-none" onChange={(e) => handleVenueImageUpload(selectedAdminVenue.id, e.target.files)} />
                       </label>
                       <div className="d-flex align-items-center justify-content-between mb-2">
                         <h6 className="fw-bold text-dark mb-0">Venue Information</h6>
@@ -1756,6 +1820,7 @@ const DashboardPage = () => {
                             </p>
                             <input
                               type="file"
+                              multiple
                               accept="image/*"
                               className="form-control form-control-sm mx-auto"
                               style={{ maxWidth: '300px' }}
@@ -2073,6 +2138,36 @@ const DashboardPage = () => {
                             <span className="badge bg-light text-dark border"><BiPhone className="me-1" />{v.contactPhone || 'N/A'}</span>
                           </div>
 
+                          <div className="mb-3">
+                            {v.images && v.images.length > 0 ? (
+                              <div className="d-flex overflow-auto gap-2 pb-2 custom-scrollbar">
+                                {v.images.map((img) => (
+                                  <div key={img.id} className="position-relative flex-shrink-0" style={{ width: '80px' }}>
+                                    <img 
+                                      src={img.imageUrl} 
+                                      alt="Venue" 
+                                      className="w-100 rounded object-fit-cover shadow-sm border"
+                                      style={{ height: '60px' }}
+                                    />
+                                    {img.primary ? (
+                                      <span className="badge bg-success position-absolute top-0 start-0 m-1" style={{ fontSize: '8px' }}>Primary</span>
+                                    ) : (
+                                      <button 
+                                        className="btn btn-sm btn-light position-absolute bottom-0 end-0 m-1 p-0 opacity-75 fw-bold hover-opacity-100"
+                                        style={{ fontSize: '8px', padding: '2px 4px' }}
+                                        onClick={() => handleSetPrimaryImage(v.id, img.id)}
+                                      >
+                                        Set Primary
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <img src={v.imageUrl} alt={v.name} className="w-100 rounded object-fit-cover shadow-sm" style={{ height: '100px' }} />
+                            )}
+                          </div>
+
                           <div className="d-flex flex-column gap-1 mb-3">
                             {v.turfs ? v.turfs.map((turf, idx) => (
                               <div key={idx} className="p-2 bg-light rounded border d-flex flex-column gap-1" style={{ fontSize: '11px' }}>
@@ -2102,7 +2197,7 @@ const DashboardPage = () => {
                             </button>
                             <label className="btn btn-ss-primary flex-grow-1 py-2 small d-inline-flex align-items-center justify-content-center gap-1 mb-0 cursor-pointer">
                               <BiUpload /> <span style={{fontSize: '11px'}}>Upload Image</span>
-                              <input type="file" accept="image/*" className="d-none" onChange={(e) => handleVenueImageUpload(v.id, e.target.files[0])} />
+                              <input type="file" multiple accept="image/*" className="d-none" onChange={(e) => handleVenueImageUpload(v.id, e.target.files)} />
                             </label>
                           </div>
                         </div>

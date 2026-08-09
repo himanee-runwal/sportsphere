@@ -28,7 +28,7 @@ replay_pid*
 *.env
 .env.local
 .env.*.local
-.env.example
+!.env.example
 ARCHITECTURE_NOTES.md
 
 # Google credentials (never commit)

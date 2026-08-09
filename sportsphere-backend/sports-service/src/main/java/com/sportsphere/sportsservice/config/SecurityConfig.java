@@ -16,30 +16,32 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthFilter jwtAuthFilter;
+        private final JwtAuthFilter jwtAuthFilter;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(cors -> cors.disable())
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        // Public: read-only venue access and static images
-                        .requestMatchers(HttpMethod.GET, "/api/v1/sports/venues/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/sports/venues").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                        // Swagger + Actuator
-                        .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/actuator/**",
-                                "/error").permitAll()
-                        // Everything else requires authentication
-                        .anyRequest().authenticated())
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .cors(cors -> cors.disable())
+                                .csrf(csrf -> csrf.disable())
+                                .authorizeHttpRequests(auth -> auth
+                                                // Public: read-only venue access and static images
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/sports/venues/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/sports/venues").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/sports/uploads/**")
+                                                .permitAll()
+                                                // Swagger + Actuator
+                                                .requestMatchers(
+                                                                "/v3/api-docs/**",
+                                                                "/swagger-ui/**",
+                                                                "/swagger-ui.html",
+                                                                "/actuator/**",
+                                                                "/error")
+                                                .permitAll()
+                                                // Everything else requires authentication
+                                                .anyRequest().authenticated())
+                                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 }

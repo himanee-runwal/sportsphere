@@ -926,11 +926,41 @@ const VenuesPage = () => {
             {/* Gallery Cover Photo */}
             <div className="ss-card bg-white p-0 border overflow-hidden shadow-sm mb-4" style={{ borderRadius: '12px' }}>
               <div style={{ height: '350px' }} className="position-relative">
-                <img 
-                  src={selectedVenue.imageUrl} 
-                  alt={selectedVenue.name} 
-                  className="w-100 h-100 object-fit-cover"
-                />
+                {selectedVenue.images && selectedVenue.images.length > 0 ? (
+                  <div id="venueImageCarousel" className="carousel slide mb-4 rounded-4 overflow-hidden shadow-sm" data-bs-ride="carousel" style={{ height: '350px' }}>
+                    <div className="carousel-indicators">
+                      {selectedVenue.images.map((img, idx) => (
+                        <button key={img.id} type="button" data-bs-target="#venueImageCarousel" data-bs-slide-to={idx} className={idx === 0 ? 'active' : ''} aria-label={`Slide ${idx + 1}`}></button>
+                      ))}
+                    </div>
+                    <div className="carousel-inner h-100">
+                      {selectedVenue.images.map((img, idx) => (
+                        <div key={img.id} className={`carousel-item h-100 ${idx === 0 ? 'active' : ''}`}>
+                          <img src={img.imageUrl} className="d-block w-100 h-100 object-fit-cover" alt="Venue" />
+                        </div>
+                      ))}
+                    </div>
+                    {selectedVenue.images.length > 1 && (
+                      <>
+                        <button className="carousel-control-prev" type="button" data-bs-target="#venueImageCarousel" data-bs-slide="prev">
+                          <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+                          <span className="visually-hidden">Previous</span>
+                        </button>
+                        <button className="carousel-control-next" type="button" data-bs-target="#venueImageCarousel" data-bs-slide="next">
+                          <span className="carousel-control-next-icon" aria-hidden="true"></span>
+                          <span className="visually-hidden">Next</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <img 
+                    src={selectedVenue.imageUrl} 
+                    alt={selectedVenue.name} 
+                    className="w-100 rounded-4 object-fit-cover shadow-sm mb-4"
+                    style={{ height: '350px' }}
+                  />
+                )}
               </div>
             </div>
 

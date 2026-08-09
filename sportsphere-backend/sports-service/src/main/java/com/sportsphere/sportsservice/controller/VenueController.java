@@ -139,6 +139,8 @@ public class VenueController {
                 getUserId(httpRequest), getRole(httpRequest)));
     }
 
+
+
     @Operation(summary = "Set primary image for venue (ADMIN or MANAGER)")
     @PatchMapping("/{id}/images/{imageId}/primary")
     public ResponseEntity<MessageResponse> setPrimaryImage(
