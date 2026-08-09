@@ -15,10 +15,7 @@ builder.Services.AddSwaggerGen();
 // Configure Entity Framework Core with MySQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<NotificationDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
-        mySqlOptions => mySqlOptions
-            .DefaultCharSet(Pomelo.EntityFrameworkCore.MySql.Infrastructure.CharSet.Utf8Mb4)
-            .GuidFormat(Pomelo.EntityFrameworkCore.MySql.Infrastructure.MySqlGuidFormat.String)));
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 // Configure DI for Services
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
