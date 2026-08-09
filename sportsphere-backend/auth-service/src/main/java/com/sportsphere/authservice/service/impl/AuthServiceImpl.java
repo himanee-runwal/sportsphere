@@ -19,7 +19,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.Random;
 import java.util.UUID;
 
 @Service
@@ -156,7 +155,8 @@ public class AuthServiceImpl implements AuthService {
 
         @Override
         public MessageResponse forgotPassword(ForgotPasswordRequest request) {
-                Optional<User> userOpt = repository.findByEmailOrPhone(request.getEmailOrPhone(), request.getEmailOrPhone());
+                Optional<User> userOpt = repository.findByEmailOrPhone(request.getEmailOrPhone(),
+                                request.getEmailOrPhone());
 
                 if (userOpt.isPresent()) {
                         User user = userOpt.get();
@@ -165,10 +165,13 @@ public class AuthServiceImpl implements AuthService {
                         user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15));
                         repository.save(user);
 
-                        notificationClient.sendPasswordResetTokenEmail(user.getId().toString(), user.getEmail(), resetToken);
+                        notificationClient.sendPasswordResetTokenEmail(user.getId().toString(), user.getEmail(),
+                                        resetToken);
                 }
 
-                return MessageResponse.builder().message("If an account with that email exists, a password reset link has been sent.").build();
+                return MessageResponse.builder()
+                                .message("If an account with that email exists, a password reset link has been sent.")
+                                .build();
         }
 
         @Override
@@ -194,7 +197,8 @@ public class AuthServiceImpl implements AuthService {
 
                 notificationClient.sendPasswordResetTokenEmail(user.getId().toString(), user.getEmail(), resetToken);
 
-                return MessageResponse.builder().message("OTP verified successfully. Password reset link sent to your email.").build();
+                return MessageResponse.builder()
+                                .message("OTP verified successfully. Password reset link sent to your email.").build();
         }
 
         @Override
@@ -204,7 +208,8 @@ public class AuthServiceImpl implements AuthService {
                 User user = repository.findAll().stream()
                                 .filter(u -> resetToken.equals(u.getResetToken()))
                                 .findFirst()
-                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid reset token"));
+                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                                "Invalid reset token"));
 
                 if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Reset token has expired");
@@ -297,7 +302,8 @@ public class AuthServiceImpl implements AuthService {
 
                 repository.save(user);
 
-                notificationClient.sendManagerRegistrationEmail(user.getId().toString(), user.getEmail(), user.getFirstName(), resetToken);
+                notificationClient.sendManagerRegistrationEmail(user.getId().toString(), user.getEmail(),
+                                user.getFirstName(), resetToken);
 
                 return getMe(user.getEmail());
         }
