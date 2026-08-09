@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/bookings/{bookingId}/payments")
+@RequestMapping("/api/v1/booking/{bookingId}/payments")
 @RequiredArgsConstructor
 @Tag(name = "Payments", description = "Endpoints for simulating booking payments")
 public class PaymentController {
