@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -49,6 +50,9 @@ public class BookingServiceImpl implements BookingService {
             throw new BadRequestException("The requested turf is currently inactive");
         }
 
+        VenueResponse venue = sportsServiceClient.getVenueById(turf.getVenueId());
+        LocalTime openTime = venue.getOpenTime();
+
         // Fetch configured slots
         List<TimeSlot> slots = timeSlotRepository.findByGroundIdAndIsAvailableTrue(groundId);
 
@@ -70,16 +74,27 @@ public class BookingServiceImpl implements BookingService {
         return slots.stream()
                 .map(slot -> {
                         boolean isBooked = bookedSlotIds.contains(slot.getId());
-                        boolean isPast = date.equals(LocalDate.now()) && slot.getStartTime().isBefore(LocalTime.now());
+
+                        // If the slot's start time is earlier than the venue's open time, it must be the next day (post-midnight)
+                        boolean isNextDay = slot.getStartTime().isBefore(openTime);
+                        LocalDate actualSlotDate = isNextDay ? date.plusDays(1) : date;
+                        LocalDateTime slotDateTime = LocalDateTime.of(actualSlotDate, slot.getStartTime());
+
+                        boolean isPast = slotDateTime.isBefore(LocalDateTime.now());
+
+                        // Filter out past slots entirely — don't return them
+                        if (isPast) return null;
+
                         return SlotAvailabilityResponse.builder()
                                 .slotId(slot.getId())
                                 .startTime(slot.getStartTime())
                                 .endTime(slot.getEndTime())
                                 .price(calculateSlotPrice(turf.getPricePerHour(), slot))
-                                .isAvailable(!isBooked && !isPast)
+                                .isAvailable(!isBooked)
                                 .isBooked(isBooked)
                                 .build();
                 })
+                .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -227,20 +242,22 @@ public class BookingServiceImpl implements BookingService {
             throw new BadRequestException("Venue operating hours are not configured");
         }
 
-        if (!openTime.isBefore(closeTime)) {
-            throw new BadRequestException("Venue open time must be before close time");
-        }
-
         // Delete existing slot configuration for the ground
         timeSlotRepository.deleteByGroundId(groundId);
 
-        // Generate hourly slots
+        // Calculate total operating minutes — supports overnight venues (e.g., 11:30 PM to 3:30 AM)
+        long totalMinutes = ChronoUnit.MINUTES.between(openTime, closeTime);
+        if (totalMinutes <= 0) {
+            totalMinutes += 24 * 60; // Crosses midnight
+        }
+
+        // Generate hourly slots within the operating window
         LocalTime startTime = openTime;
-        while (startTime.isBefore(closeTime)) {
-            LocalTime endTime = startTime.plusHours(1);
-            if (endTime.isAfter(closeTime)) {
-                endTime = closeTime;
-            }
+        long minutesGenerated = 0;
+        while (minutesGenerated < totalMinutes) {
+            long remainingMinutes = totalMinutes - minutesGenerated;
+            long slotMinutes = Math.min(60, remainingMinutes);
+            LocalTime endTime = startTime.plusMinutes(slotMinutes);
 
             TimeSlot slot = TimeSlot.builder()
                     .groundId(groundId)
@@ -251,6 +268,7 @@ public class BookingServiceImpl implements BookingService {
 
             timeSlotRepository.save(slot);
             startTime = endTime;
+            minutesGenerated += slotMinutes;
         }
 
         log.info("Initialized hourly time slots for ground ID {} between {} and {}", groundId, openTime, closeTime);
@@ -261,6 +279,9 @@ public class BookingServiceImpl implements BookingService {
             return BigDecimal.ZERO;
         }
         long minutes = ChronoUnit.MINUTES.between(slot.getStartTime(), slot.getEndTime());
+        if (minutes < 0) {
+            minutes += 24 * 60; // Handle overnight slots
+        }
         return pricePerHour.multiply(BigDecimal.valueOf(minutes))
                 .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
     }
