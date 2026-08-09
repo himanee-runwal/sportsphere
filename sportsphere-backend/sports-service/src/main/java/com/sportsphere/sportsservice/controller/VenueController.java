@@ -119,7 +119,7 @@ public class VenueController {
     // IMAGES
     // ─────────────────────────────────────────────────────────────────────────────
 
-    @Operation(summary = "Upload a venue image to Google Drive (ADMIN or MANAGER)")
+    @Operation(summary = "Upload a venue image (ADMIN or MANAGER)")
     @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<VenueImageResponse> uploadImage(
             @PathVariable Long id,
